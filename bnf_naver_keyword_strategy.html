@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BNF테크놀로지 — 네이버 광고 키워드 전략 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f2f1ed;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.15);
+    --text: #1a1916;
+    --text-secondary: #6b6a65;
+    --text-tertiary: #9e9d98;
+    --blue: #1a56db;
+    --blue-bg: #eff5ff;
+    --blue-border: #a4c2f9;
+    --green: #0e7c4a;
+    --green-bg: #ecfdf3;
+    --green-border: #6ee7b7;
+    --amber: #92400e;
+    --amber-bg: #fffbeb;
+    --amber-border: #fcd34d;
+    --red: #991b1b;
+    --red-bg: #fef2f2;
+    --red-border: #fca5a5;
+    --gray-bg: #f3f4f6;
+    --gray-text: #4b5563;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .header-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .header-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+  .header-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-bg); color: var(--blue); font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--blue-border); white-space: nowrap; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  /* Layout */
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 40px 0; }
+  .section { margin-bottom: 40px; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .section-num { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--text-tertiary); background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; }
+  .section-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+  /* Filter tabs */
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .filter-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { background: var(--surface2); color: var(--text); }
+  .filter-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+  /* Table */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--surface2);
+    font-size: 11px; font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { transition: background 0.1s; cursor: pointer; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  tbody td { padding: 11px 14px; vertical-align: top; }
+  .kw-name { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .kw-basis { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .badge-hot { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .badge-mid { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .badge-low { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .badge-t1 { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .badge-t2 { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .badge-t3 { background: var(--gray-bg); color: var(--gray-text); border: 1px solid var(--border-strong); }
+  .basis-block { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; line-height: 1.5; }
+  /* Tooltip hover row */
+  .detail-row { display: none; background: #fafaf8; }
+  .detail-row.open { display: table-row; }
+  .detail-cell { padding: 0 14px 12px 14px !important; border-bottom: 1px solid var(--border); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px; }
+  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+  .detail-card-label { font-size: 10px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .detail-card-val { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .detail-card-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+  .expand-hint { font-size: 11px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+  /* Sim section */
+  .sim-note {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .sim-note-title { font-size: 11px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .sim-note code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--surface); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-strong); color: var(--text); }
+  /* Keyword selector */
+  .kw-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .kw-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 7px 14px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 20px;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--text-secondary);
+    transition: all 0.18s;
+    display: flex; align-items: center; gap: 5px;
+    position: relative;
+    user-select: none;
+  }
+  .kw-btn:hover:not(.selected):not(.disabled) {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--blue-bg);
+    transform: translateY(-1px);
+  }
+  .kw-btn.selected {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+  .kw-btn.selected::after {
+    content: '✓';
+    font-size: 11px;
+    margin-left: 2px;
+    opacity: 0.8;
+  }
+  .kw-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+  .kw-btn .cpc-hint { font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.6; }
+  /* Counter */
+  .sel-counter {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text-secondary);
+    margin-bottom: 16px;
+  }
+  .counter-pills { display: flex; gap: 5px; }
+  .counter-pill {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--border-strong);
+    transition: background 0.2s;
+  }
+  .counter-pill.filled { background: var(--text); }
+  /* Metrics */
+  .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
+  .metric-label { font-size: 11px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .metric-val { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; line-height: 1; margin-bottom: 4px; }
+  .metric-sub { font-size: 11px; color: var(--text-tertiary); }
+  /* Budget bars */
+  .budget-rows { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .budget-row { padding: 14px 18px; }
+  .budget-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .budget-row-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .budget-kw { font-size: 13px; font-weight: 600; }
+  .budget-nums { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary); }
+  .bar-track { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+  .bar-fill { height: 100%; background: var(--text); border-radius: 3px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+  .bar-meta { font-size: 11px; color: var(--text-tertiary); font-family: 'DM Mono', monospace; }
+  /* Conversion note */
+  .conv-note { background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: var(--green); margin-top: 14px; }
+  /* Empty state */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); }
+  .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+  .empty-state p { font-size: 13px; }
+  /* Scenario */
+  .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .sc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; position: relative; overflow: hidden; }
+  .sc-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .sc-card.phase1::before { background: #1a56db; }
+  .sc-card.phase2::before { background: #0e7c4a; }
+  .sc-card.phase3::before { background: #b45309; }
+  .sc-phase { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .sc-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .sc-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+  .sc-icon { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+  .sc-key { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; min-width: 40px; margin-right: 4px; }
+  .sc-val { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .sc-kws { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .sc-kw { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--surface2); color: var(--text-secondary); border: 1px solid var(--border); }
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main { padding: 20px 20px 0; }
+    .header { padding: 20px; }
+    .scenario-grid { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .detail-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .metrics-grid { grid-template-columns: 1fr; }
+  }
+  /* Scroll fade-in */
+  .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.4s, transform 0.4s; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <div class="header-title">BNF테크놀로지 — 네이버 광고 키워드 전략</div>
+      <div class="header-sub">파워링크 재개 전략 · 월 예산 300,000원 기준 · 2026년 6월</div>
+    </div>
+    <div class="header-badge">
+      <span class="dot"></span>
+      광고 재개 준비 중
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- SECTION 1: KEYWORD TABLE -->
+  <section class="section fade-in">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">바로 적용 가능한 키워드 목록 (15개)</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
+      행을 클릭하면 경쟁도 · CPC · 우선순위 산출 근거를 확인할 수 있습니다.
+    </p>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterKw('all',this)">전체 15개</button>
+      <button class="filter-btn" onclick="filterKw('tier1',this)">즉시 집행 추천</button>
+      <button class="filter-btn" onclick="filterKw('tier2',this)">중기 추가</button>
+      <button class="filter-btn" onclick="filterKw('tier3',this)">장기 검토</button>
+    </div>
+    <div class="table-wrap">
+      <table id="kwTable">
+        <thead>
+          <tr>
+            <th style="width:28px">#</th>
+            <th style="width:170px">키워드</th>
+            <th style="width:100px">경쟁도</th>
+            <th style="width:110px">예상 CPC</th>
+            <th style="width:100px">우선순위</th>
+            <th>선정 근거 요약</th>
+          </tr>
+        </thead>
+        <tbody id="kwBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECTION 2: SIMULATOR -->
+  <section class="section fade-in">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">월 300,000원 예산 시뮬레이터</span>
+    </div>
+
+    <!-- 계산식 주석 -->
+    <div class="sim-note">
+      <div class="sim-note-title">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="7"/><line x1="8" y1="7" x2="8" y2="11"/><line x1="8" y1="5" x2="8" y2="5.5"/></svg>
+        계산식 및 근거
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;font-size:12px">
+        <div>① <strong>예산 비중</strong> = 해당 키워드 CPC ÷ 선택 키워드 CPC 합계</div>
+        <div>② <strong>키워드별 배분 예산</strong> = 총예산(300,000원) × 예산 비중</div>
+        <div>③ <strong>예상 클릭수</strong> = 키워드별 배분 예산 ÷ 해당 키워드 CPC</div>
+        <div>④ <strong>평균 CPC</strong> = 총예산(300,000원) ÷ 전체 예상 클릭수 합계</div>
+        <div>⑤ <strong>예상 문의 건수</strong> = 전체 클릭수 × B2B 전환율 2~5%</div>
+        <div>⑥ CPC는 네이버 키워드 플래너 기준 추정치 (±30% 오차 가능)</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+      키워드 5개를 선택하세요. 선택된 키워드는 진하게 표시됩니다.
+    </p>
+    <div class="sel-counter">
+      <div class="counter-pills" id="counterPills"></div>
+      <span id="selCountText" style="font-size:13px;font-weight:500">0 / 5 선택됨</span>
+      <span style="color:var(--text-tertiary)">|</span>
+      <span id="selHint" style="font-size:12px;color:var(--text-tertiary)">5개를 선택하면 시뮬레이션이 시작됩니다</span>
+    </div>
+    <div class="kw-selector" id="kwSelector"></div>
+
+    <div id="simResult">
+      <div class="empty-state">
+        <div class="icon">↑</div>
+        <p>위에서 키워드 5개를 선택해주세요</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECTION 3: SCENARIOS -->
+  <section class="section fade-in">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">키워드 전략 시나리오 설계 (3단계)</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:18px">
+      집행 결과에 따라 단계를 전환합니다. 각 단계의 트리거 조건을 기준으로 판단하세요.
+    </p>
+    <div class="scenario-grid" id="scenarioGrid"></div>
+  </section>
+
+</main>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const keywords = [
+  {
+    id:1, kw:'설비 예지보전', comp:'low', cpc:2000, tier:'tier1',
+    reason:'BNF HanPHI 제품과 직결. 구매 의도 가장 명확한 키워드',
+    compBasis:'국내 경쟁사(원프레딕트·가온플랫폼)가 주로 영문 키워드 사용. 한글 검색광고 입찰자 수 적음',
+    cpcBasis:'네이버 키워드 플래너 기준 산업용 B2B 유사 키워드 평균 CPC 1,500~3,000원 범위 추정',
+    tierBasis:'BNF 핵심 제품(HanPHI)과 1:1 매칭. 검색자 = 솔루션 도입 검토자. 전환율 최고 기대'
+  },
+  {
+    id:2, kw:'플랜트 데이터 관리', comp:'low', cpc:2500, tier:'tier1',
+    reason:'HanPrism 솔루션 직결. 국내 광고 경쟁자 매우 적음',
+    compBasis:'Siemens·Honeywell 등 외산 기업은 한국어 파워링크 입찰 거의 없음. 국내 경쟁사도 이 키워드 미활용 확인',
+    cpcBasis:'플랜트 관련 B2B 키워드 평균 CPC 2,000~4,000원대. 경쟁 낮아 하단 추정',
+    tierBasis:'BNF의 핵심 포지셔닝(프로세스 플랜트 운영 소프트웨어)과 정확히 일치. 즉시 집행 가능'
+  },
+  {
+    id:3, kw:'산업용 데이터 수집', comp:'mid', cpc:3000, tier:'tier1',
+    reason:'IIoT 도입 검토 단계 타겟. XISOM·엠투엠글로벌 경쟁',
+    compBasis:'XISOM(X-DAS), 엠투엠글로벌이 유사 키워드 입찰 중. 입찰자 3~5개사 추정. 중간 경쟁도',
+    cpcBasis:'데이터 수집·IIoT 관련 키워드 CPC 2,500~4,500원 범위. 경쟁사 입찰로 중간값 추정',
+    tierBasis:'솔루션 도입 전 조사 단계 검색어. 상위 노출 시 BNF 인지도 형성에 효과적'
+  },
+  {
+    id:4, kw:'스마트팩토리 솔루션', comp:'hot', cpc:10000, tier:'tier1',
+    reason:'검색량 최고. 기존 등록 키워드. 경쟁 강하나 필수',
+    compBasis:'엠아이큐브솔루션·엠투아이·한국네트웍스 등 다수 입찰. 10개사 이상 경쟁 추정. 최고 경쟁도',
+    cpcBasis:'기존 계정 등록 입찰가 10,000원 기준. 네이버 스마트팩토리 관련 키워드 상위권 CPC 8,000~15,000원',
+    tierBasis:'검색량 가장 높은 대표 키워드. 경쟁 강해 예산 소진 빠르나 BNF 브랜드 노출에 필수'
+  },
+  {
+    id:5, kw:'설비관리시스템', comp:'hot', cpc:13000, tier:'tier1',
+    reason:'기존 등록 키워드. 구매 의도 매우 높음',
+    compBasis:'설비관리 솔루션 공급사 다수 입찰. 기존 계정 입찰가 13,000원으로 이미 높은 경쟁 반영',
+    cpcBasis:'기존 계정 설정값 13,000원. 상위 노출 유지 시 실제 CPC 10,000~12,000원 예상',
+    tierBasis:'구매 의사결정 단계에서 검색하는 키워드. 클릭당 단가 높으나 문의 전환 가능성 가장 높음'
+  },
+  {
+    id:6, kw:'히스토리안 소프트웨어', comp:'low', cpc:1500, tier:'tier1',
+    reason:'BNF 기술 특화. 경쟁 거의 없음. 전문가 타겟',
+    compBasis:'국내 파워링크 입찰자 거의 없는 니치 키워드. 외산(OSIsoft PI 등) 비교 검색자 타겟',
+    cpcBasis:'니치 B2B 기술 키워드. 입찰 경쟁 낮아 최저 입찰가 수준인 1,000~2,000원 예상',
+    tierBasis:'전문 기술직 검색자가 대상. 저예산으로 고품질 리드 획득 가능. 즉시 집행 시 가성비 최상'
+  },
+  {
+    id:7, kw:'실시간 설비 모니터링', comp:'mid', cpc:4000, tier:'tier1',
+    reason:'솔루션 도입 검토 단계 타겟. 원프레딕트 경쟁',
+    compBasis:'원프레딕트·KOPENS 등 Industrial AI 기업 일부 입찰. 5개사 내외 경쟁 추정',
+    cpcBasis:'모니터링·IoT 관련 B2B 키워드 CPC 3,000~5,000원 범위 추정',
+    tierBasis:'도입 검토 초기 단계 검색어. BNF HanPrism 실시간 모니터링 기능과 직결'
+  },
+  {
+    id:8, kw:'플랜트 운영 소프트웨어', comp:'low', cpc:2000, tier:'tier2',
+    reason:'Honeywell·Emerson 한국어 검색 대체. BNF 포지셔닝 적합',
+    compBasis:'외산 기업 한국어 파워링크 없음. 국내 경쟁사 미활용 키워드. 경쟁 낮음',
+    cpcBasis:'플랜트 운영 관련 한글 B2B 키워드. 경쟁 낮아 2,000원 이하 추정',
+    tierBasis:'BNF 포지셔닝과 일치하나 검색량이 즉시 추천 키워드 대비 낮음. 예산 여유 시 추가 권장'
+  },
+  {
+    id:9, kw:'SCADA 소프트웨어', comp:'mid', cpc:3500, tier:'tier2',
+    reason:'XISOM 경쟁 키워드. 기술 도입 검토자 타겟',
+    compBasis:'XISOM이 SCADA 관련 키워드 입찰 중. 기타 산업용 자동화 업체 3~5개사 경쟁',
+    cpcBasis:'SCADA·HMI 관련 B2B 키워드 CPC 3,000~5,000원 범위 추정',
+    tierBasis:'기술 스펙 검색 단계. BNF 제품과 연관성 있으나 설비관리·예지보전 대비 우선순위 낮음'
+  },
+  {
+    id:10, kw:'HMI 솔루션', comp:'mid', cpc:3000, tier:'tier2',
+    reason:'BNF 웹사이트 메타태그 키워드. 기술 스펙 검색자',
+    compBasis:'엠투아이(M2I) 등 HMI 전문 기업 다수 입찰. BNF 웹사이트에도 등록된 키워드',
+    cpcBasis:'HMI 관련 B2B 키워드 CPC 2,500~4,000원 범위 추정',
+    tierBasis:'BNF 사이트 메타태그에 포함된 키워드이나 주력 제품 대비 연관성 낮음. 중기 단계 추가 적합'
+  },
+  {
+    id:11, kw:'자산성능관리 APM', comp:'low', cpc:2000, tier:'tier2',
+    reason:'Schneider·Emerson 경쟁 포지션. 국내 성장 중인 키워드',
+    compBasis:'APM 키워드 국내 파워링크 입찰자 거의 없음. 외산 기업 한국어 광고 없음',
+    cpcBasis:'APM은 한국어 검색 아직 초기 단계. 낮은 경쟁으로 1,500~2,500원 추정',
+    tierBasis:'성장 중인 트렌드 키워드. 즉시 검색량은 낮으나 BNF 장기 포지셔닝과 일치. 중기 추가 권장'
+  },
+  {
+    id:12, kw:'디지털트윈 플랫폼', comp:'mid', cpc:5000, tier:'tier2',
+    reason:'기존 등록 키워드. Siemens 경쟁. 인지도 키워드',
+    compBasis:'Siemens·일부 대기업 계열사 입찰. 기존 계정에 5,000원으로 이미 등록된 키워드',
+    cpcBasis:'기존 계정 입찰가 5,000원 기준. 디지털트윈 관련 CPC 4,000~7,000원 범위',
+    tierBasis:'기존 등록 키워드이나 BNF 핵심 솔루션과 직결성이 예지보전·플랜트 키워드 대비 낮음'
+  },
+  {
+    id:13, kw:'발전소 운영 시스템', comp:'low', cpc:2000, tier:'tier3',
+    reason:'BNF 주력 산업(남동발전·한수원) 타겟. 롱테일 키워드',
+    compBasis:'발전소 특화 운영 시스템 국내 파워링크 입찰자 극소수. 경쟁 매우 낮음',
+    cpcBasis:'발전소·에너지 관련 니치 B2B 키워드. 경쟁 낮아 1,500~2,500원 추정',
+    tierBasis:'검색량이 적어 즉시 집행 효율은 낮음. 남동발전·한수원 등 BNF 기존 고객사 유사 기업 타겟용'
+  },
+  {
+    id:14, kw:'OPC 통신 소프트웨어', comp:'low', cpc:1500, tier:'tier3',
+    reason:'BNF 기술 특화. 초정밀 타겟. 검색량 적으나 전환율 높음',
+    compBasis:'OPC 통신 관련 한글 파워링크 입찰자 거의 없음. BNF 사이트 메타태그 키워드',
+    cpcBasis:'기술 전문 니치 키워드. 입찰 경쟁 없어 최저 입찰가 1,000~2,000원 수준',
+    tierBasis:'월 검색량 수십 건 수준으로 추정. 예산 소진 거의 없으나 극도로 정밀한 리드 확보 가능. 장기 보완용'
+  },
+  {
+    id:15, kw:'스마트공장 소프트웨어', comp:'hot', cpc:8000, tier:'tier3',
+    reason:'검색량 높으나 B2C 혼재. 예산 여유 시 추가',
+    compBasis:'스마트공장 관련 키워드 중 경쟁 최상위권. 10개사 이상 입찰. 중소기업 정부지원 사업 광고도 혼재',
+    cpcBasis:'스마트팩토리 솔루션과 유사 경쟁 강도. CPC 7,000~10,000원 추정',
+    tierBasis:'B2C·중소기업 대상 광고 혼재로 BNF 타겟(대형 플랜트·발전소)과 매칭 효율 낮음. 예산 증액 후 추가'
+  }
+];
+
+const scenarios = [
+  {
+    phase:'PHASE 01',
+    title:'탐색기 — 데이터 수집',
+    period:'1~2개월',
+    cls:'phase1',
+    trigger:'광고 재개 직후. 클릭·전환 데이터 전혀 없는 상태',
+    goal:'어떤 키워드가 실제로 클릭되는지 파악. 무손실 데이터 확보',
+    strategy:'저단가·특화 키워드 5개 중심. 예산 소진 최소화하며 CTR 확인',
+    budget:'저단가 조합 → 월 80~120회 클릭 목표. 일 예산 10,000원 설정',
+    kws:['설비 예지보전','히스토리안 소프트웨어','플랜트 데이터 관리','산업용 데이터 수집','실시간 설비 모니터링']
+  },
+  {
+    phase:'PHASE 02',
+    title:'집중기 — 성과 키워드 강화',
+    period:'3~4개월',
+    cls:'phase2',
+    trigger:'CTR 1% 이상 또는 문의 1건 이상 발생한 키워드 확인 시 전환',
+    goal:'성과 키워드에 예산 집중. 파워링크 상위 3위 이내 진입',
+    strategy:'성과 키워드 입찰가 20~30% 상향. 비효율 키워드 OFF. 고단가 키워드 1~2개 추가',
+    budget:'예산 80%를 성과 키워드에 집중. 나머지 20%로 신규 1~2개 테스트',
+    kws:['성과 확인 키워드 2~3개 유지','설비관리시스템 추가','스마트팩토리 솔루션 추가']
+  },
+  {
+    phase:'PHASE 03',
+    title:'확장기 — 브랜드 인지도 병행',
+    period:'5개월 이후',
+    cls:'phase3',
+    trigger:'월 문의 3건 이상 안정화 또는 예산 증액 가능 시점',
+    goal:'파워링크 1~3위 고정. 네이버 블로그 SEO 연계로 광고 효율 극대화',
+    strategy:'고단가 주력 키워드 확대. 확장소재 서브링크 강화. 블로그 키워드 광고 연동',
+    budget:'월 예산 30만→50만원 증액 검토. 계절·전시회 시기 집중 집행',
+    kws:['스마트팩토리 솔루션','설비관리시스템','SCADA 소프트웨어','자산성능관리 APM','디지털트윈 플랫폼']
+  }
+];
+
+// ─── TABLE RENDER ────────────────────────────────────────
+const compLabel = {
+  hot:'<span class="badge badge-hot">경쟁 높음</span>',
+  mid:'<span class="badge badge-mid">경쟁 중간</span>',
+  low:'<span class="badge badge-low">경쟁 낮음</span>'
+};
+const tierLabel = {
+  tier1:'<span class="badge badge-t1">즉시 추천</span>',
+  tier2:'<span class="badge badge-t2">중기 추가</span>',
+  tier3:'<span class="badge badge-t3">장기 검토</span>'
+};
+
+let openRow = null;
+
+function renderTable(filter) {
+  const data = filter === 'all' ? keywords : keywords.filter(k => k.tier === filter);
+  const tbody = document.getElementById('kwBody');
+  tbody.innerHTML = '';
+  data.forEach((k, i) => {
+    // Main row
+    const tr = document.createElement('tr');
+    tr.id = 'row-' + k.id;
+    tr.innerHTML = `
+      <td style="color:var(--text-tertiary);font-family:'DM Mono',monospace;font-size:11px">${String(k.id).padStart(2,'0')}</td>
+      <td>
+        <div class="kw-name">${k.kw}</div>
+        <div class="expand-hint">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 4 10 8 6 12"/></svg>
+          클릭하면 근거 보기
+        </div>
+      </td>
+      <td>${compLabel[k.comp]}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:500">~${k.cpc.toLocaleString()}원</td>
+      <td>${tierLabel[k.tier]}</td>
+      <td style="color:var(--text-secondary);font-size:12px">${k.reason}</td>
+    `;
+    tr.addEventListener('click', () => toggleDetail(k.id, data.length));
+    tbody.appendChild(tr);
+
+    // Detail row
+    const dr = document.createElement('tr');
+    dr.className = 'detail-row';
+    dr.id = 'detail-' + k.id;
+    dr.innerHTML = `
+      <td></td>
+      <td colspan="5" class="detail-cell">
+        <div class="detail-grid">
+          <div class="detail-card">
+            <div class="detail-card-label">경쟁도 산출 근거</div>
+            <div class="detail-card-val">${compLabel[k.comp]}</div>
+            <div class="detail-card-desc">${k.compBasis}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">예상 CPC 근거</div>
+            <div class="detail-card-val" style="font-family:'DM Mono',monospace">~${k.cpc.toLocaleString()}원/클릭</div>
+            <div class="detail-card-desc">${k.cpcBasis}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">우선순위 판단 근거</div>
+            <div class="detail-card-val">${tierLabel[k.tier]}</div>
+            <div class="detail-card-desc">${k.tierBasis}</div>
+          </div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(dr);
+  });
+}
+
+function toggleDetail(id) {
+  const dr = document.getElementById('detail-' + id);
+  const tr = document.getElementById('row-' + id);
+  if (openRow === id) {
+    dr.classList.remove('open');
+    tr.style.background = '';
+    openRow = null;
+  } else {
+    if (openRow !== null) {
+      document.getElementById('detail-' + openRow)?.classList.remove('open');
+      document.getElementById('row-' + openRow) && (document.getElementById('row-' + openRow).style.background = '');
+    }
+    dr.classList.add('open');
+    tr.style.background = 'var(--surface2)';
+    openRow = id;
+  }
+}
+
+function filterKw(f, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  openRow = null;
+  renderTable(f);
+}
+
+// ─── SIMULATOR ───────────────────────────────────────────
+let selected = new Set();
+
+function renderSimButtons() {
+  const c = document.getElementById('kwSelector');
+  const pills = document.getElementById('counterPills');
+  c.innerHTML = keywords.map(k => `
+    <button class="kw-btn" id="simBtn${k.id}" onclick="toggleKw(${k.id}, this)">
+      ${k.kw}
+      <span class="cpc-hint">~${(k.cpc/1000).toFixed(1)}k</span>
+    </button>
+  `).join('');
+  pills.innerHTML = Array.from({length:5}, (_,i) => `<div class="counter-pill" id="pill${i}"></div>`).join('');
+}
+
+function toggleKw(id, btn) {
+  if (selected.has(id)) {
+    selected.delete(id);
+    btn.classList.remove('selected');
+    btn.classList.remove('disabled');
+  } else {
+    if (selected.size >= 5) return;
+    selected.add(id);
+    btn.classList.add('selected');
+  }
+  // Update all button disabled states
+  keywords.forEach(k => {
+    const b = document.getElementById('simBtn' + k.id);
+    if (!selected.has(k.id)) {
+      b.classList.toggle('disabled', selected.size >= 5);
+    }
+  });
+  updateCounter();
+  updateSim();
+}
+
+function updateCounter() {
+  const cnt = selected.size;
+  document.getElementById('selCountText').textContent = cnt + ' / 5 선택됨';
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('pill' + i).classList.toggle('filled', i < cnt);
+  }
+  const hint = document.getElementById('selHint');
+  if (cnt === 5) hint.textContent = '시뮬레이션이 계산되었습니다';
+  else if (cnt > 0) hint.textContent = (5 - cnt) + '개 더 선택하세요';
+  else hint.textContent = '5개를 선택하면 시뮬레이션이 시작됩니다';
+}
+
+function updateSim() {
+  const cnt = selected.size;
+  const el = document.getElementById('simResult');
+  if (cnt !== 5) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">↑</div><p>위에서 키워드 5개를 선택해주세요</p></div>`;
+    return;
+  }
+  const sel = keywords.filter(k => selected.has(k.id));
+  const TOTAL = 300000;
+  const totalCpc = sel.reduce((a, k) => a + k.cpc, 0);
+  const rows = sel.map(k => {
+    const share = k.cpc / totalCpc;
+    const budget = Math.round(TOTAL * share / 100) * 100;
+    const clicks = Math.max(1, Math.round(budget / k.cpc));
+    return { ...k, budget, clicks, share };
+  });
+  const totalBudget = rows.reduce((a, r) => a + r.budget, 0);
+  const totalClicks = rows.reduce((a, r) => a + r.clicks, 0);
+  const avgCpc = Math.round(TOTAL / totalClicks);
+  const convLow = Math.round(totalClicks * 0.02);
+  const convHigh = Math.round(totalClicks * 0.05);
+
+  el.innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">예상 월 총 클릭수</div>
+        <div class="metric-val">${totalClicks}<span style="font-size:16px;font-weight:400">회</span></div>
+        <div class="metric-sub">5개 키워드 합산</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">클릭당 평균 비용</div>
+        <div class="metric-val">${avgCpc.toLocaleString()}<span style="font-size:16px;font-weight:400">원</span></div>
+        <div class="metric-sub">300,000 ÷ ${totalClicks}회</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">예상 문의 건수</div>
+        <div class="metric-val">${convLow}~${convHigh}<span style="font-size:16px;font-weight:400">건</span></div>
+        <div class="metric-sub">B2B 전환율 2~5% 적용</div>
+      </div>
+    </div>
+    <div class="budget-rows">
+      ${rows.map(r => {
+        const pct = Math.round(r.budget / TOTAL * 100);
+        return `
+          <div class="budget-row">
+            <div class="budget-row-header">
+              <span class="budget-kw">${r.kw}</span>
+              <span class="budget-nums">${r.budget.toLocaleString()}원 &nbsp;·&nbsp; 약 ${r.clicks}회 클릭</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-meta">예산 비중 ${pct}% &nbsp;|&nbsp; CPC ~${r.cpc.toLocaleString()}원 &nbsp;|&nbsp; 계산식: ${r.budget.toLocaleString()} ÷ ${r.cpc.toLocaleString()} = ${r.clicks}회</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="conv-note">
+      B2B 특성상 클릭 1회의 가치가 높습니다. 월 <strong>${totalClicks}회</strong> 클릭 기준, 전환율 2~5% 적용 시
+      <strong>${convLow}~${convHigh}건</strong>의 인바운드 문의 기대. 문의 1건 = 잠재 계약으로 이어질 수 있음.
+    </div>
+  `;
+}
+
+// ─── SCENARIOS ───────────────────────────────────────────
+function renderScenarios() {
+  const grid = document.getElementById('scenarioGrid');
+  grid.innerHTML = scenarios.map((s, i) => `
+    <div class="sc-card ${s.cls}">
+      <div class="sc-phase">${s.phase} &nbsp;·&nbsp; ${s.period}</div>
+      <div class="sc-title">${s.title}</div>
+      <div class="sc-row">
+        <span class="sc-icon">⚡</span>
+        <div><span class="sc-key">트리거</span><span class="sc-val">${s.trigger}</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-icon">🎯</span>
+        <div><span class="sc-key">목표</span><span class="sc-val">${s.goal}</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-icon">🔧</span>
+        <div><span class="sc-key">전략</span><span class="sc-val">${s.strategy}</span></div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-icon">💰</span>
+        <div><span class="sc-key">예산</span><span class="sc-val">${s.budget}</span></div>
+      </div>
+      <div class="sc-kws">${s.kws.map(k => `<span class="sc-kw">${k}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+// ─── SCROLL FADE IN ──────────────────────────────────────
+function initFadeIn() {
+  const els = document.querySelectorAll('.fade-in');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.05 });
+  els.forEach(el => obs.observe(el));
+}
+
+// ─── INIT ────────────────────────────────────────────────
+renderTable('all');
+renderSimButtons();
+renderScenarios();
+initFadeIn();
+</script>
+</body>
+</html>
